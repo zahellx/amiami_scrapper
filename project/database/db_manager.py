@@ -2,14 +2,20 @@ from .models.figure import Figure
 from sqlalchemy import create_engine
 import pandas as pd
 from . import db
+from sqlalchemy import MetaData
+from sqlalchemy import create_engine
+from sqlalchemy.engine.url import URL
+from sqlalchemy.ext.declarative import declarative_base
 
 # Este proyecto va a hacer las peticiones directamente con pd porque es mas eficiente, asi probamos tambien sql con pandas
 class DatabaseManager():
     def __init__(self, model):
         db = 'db'
+        self.model = model
         self.table_name = model.__tablename__
         self.db_connection_str = f'mysql+pymysql://user:password@amiami_mysql_amiami_1/{db}'
         self.db_connection = create_engine(self.db_connection_str)
+        self.create_tables()
 
     def run_pruebas(self):
         # figure = Figure('Arroz', 'Arroz', 1.25, 'Arroz')
@@ -22,11 +28,18 @@ class DatabaseManager():
             'price': ['Arroz', 'pollo', 'ostias'],
             'brand': ['Arroz', 'pollo', 'ostias'],
             }
+        d = {'name': ['New Dimension Game Neptunia VII - Next Purple Processor Unit Full Ver. 1/7 Complete Figure'], 
+            'image': ['https://img.amiami.com/images/product/main/182/FIGURE-039829.jpg'],
+            'price': ['26,980'],
+            'brand': ['Vertex']}
         df = pd.DataFrame(data=d)
-        df.to_sql(self.table_name, con=self.db_connection_str, if_exists='append', index=False)
+        self.clean_table()
+        # print(c)
+        self.insert_df(df)
 
     def insert_df(self, df):
-        df.to_sql(self.table_name, con=self.db_connection_str, if_exists='append', index=False)
+        i = df.to_sql(self.table_name, con=self.db_connection_str, if_exists='append', index=False)
+        print(i)
 
     def get_all_df(self):
         query = f'SELECT * FROM {self.table_name}'
@@ -34,7 +47,8 @@ class DatabaseManager():
         return df
 
     def clean_table(self):
-        db.session.query(Figure).delete()
+        a = db.session.query(self.model).delete()
+        print(a)
 
     def create_tables(self):
         db.Base.metadata.create_all(db.engine)
@@ -42,5 +56,6 @@ class DatabaseManager():
 
 if __name__ == "__main__":
     got = DatabaseManager('figures')
+    got.clean_table()
     got.create_tables()
     # got.get_all_df()

@@ -20,20 +20,26 @@ class Main():
 
         df_db_figures = self.db_manager.get_all_df()
 
+        # preowned = df_preowned.to_numpy()
+        # db_figures = df_db_figures.to_numpy()
 
-        preowned = df_preowned.to_numpy()
-        db_figures = df_db_figures.to_numpy()
 
-
-        print('df_preowned - df_db_figures')
-        print(utilidades.compare_df(preowned, db_figures))
+        # print('df_preowned - df_db_figures')
+        # print(db_figures)
+        # print(len(df_db_figures))
+        new_figures = utilidades.compare_df(df_preowned, df_db_figures)
         
+        
+        # new_figures_df = np.array(new_figures)
+
         self.db_manager.clean_table()
+        print('inserting lines', len(df_preowned))
+        print(df_preowned)
         self.db_manager.insert_df(df_preowned)
 
 
     def get_amiami_preowned(self):
-    self.AMIAMI_PREOWNED_URI = 'https://www.amiami.com/eng/search/list/?s_st_condition_flg=1&s_sortkey=preowned&s_cate_tag=1'
+        self.AMIAMI_PREOWNED_URI = 'https://www.amiami.com/eng/search/list/?s_st_condition_flg=1&s_sortkey=preowned&s_cate_tag=1'
 
         options = Options()
         options.headless = True
@@ -48,6 +54,7 @@ class Main():
         df_figures = pd.DataFrame(columns=columns)
         pages = self.get_num_pages(driver)
         start = time.time()
+        pages = 2
         for page in range(1, pages):
             driver.get(f'{self.AMIAMI_PREOWNED_URI}&pagecnt={page}')
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
@@ -70,7 +77,7 @@ class Main():
                     df_figures = df_figures.sort_index()
             except:
                 print(page)
-        print(df_figures.to_markdown())
+        # print(df_figures.to_markdown())
             
         end = time.time()
         print(end - start)
@@ -81,10 +88,17 @@ class Main():
         pages_cont = driver.find_elements_by_class_name('pager-list')
         pages = pages_cont[0].find_elements_by_tag_name("li")
         last_page = pages[len(pages) - 1].text
-        return int(last_page)
+        return int(last_page) + 1
         # print(last_page)
 
 
+    def test(self):
+        self.db_manager = DatabaseManager(figure.Figure)
+        # df_db_figures = self.db_manager.get_all_df()
+        # self.db_manager.create_tables()
+        self.db_manager.run_pruebas()
+        pass
+
 if __name__ == "__main__":
     got = Main()
-    got.run()
+    got.test()
