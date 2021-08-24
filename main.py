@@ -12,30 +12,24 @@ import time
 from project.database.models import figure
 import numpy as np
 import project.utils.utilidades as utilidades
+from project.database.models.figure import Figure
 
 class Main():
     def run(self):
         self.db_manager = DatabaseManager(figure.Figure)
-        df_preowned = self.get_amiami_preowned()
-
-        df_db_figures = self.db_manager.get_all_df()
-
+        preowned_figures = self.get_amiami_preowned()
+        db_figures = self.db_manager.get_all()
+        print(db_figures)
         # preowned = df_preowned.to_numpy()
         # db_figures = df_db_figures.to_numpy()
 
 
-        # print('df_preowned - df_db_figures')
-        # print(db_figures)
-        # print(len(df_db_figures))
-        new_figures = utilidades.compare_df(df_preowned, df_db_figures)
+        new_figures = list(set(preowned_figures) - set(db_figures))
         
-        
-        # new_figures_df = np.array(new_figures)
-
         self.db_manager.clean_table()
-        print('inserting lines', len(df_preowned))
-        print(df_preowned)
-        self.db_manager.insert_df(df_preowned)
+        print('inserting lines', len(preowned_figures))
+        print(preowned_figures)
+        self.db_manager.insert_multiple(new_figures)
 
 
     def get_amiami_preowned(self):
@@ -51,10 +45,10 @@ class Main():
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
 
         columns = ['name', 'image', 'price', 'brand']
-        df_figures = pd.DataFrame(columns=columns)
+        # df_figures = pd.DataFrame(columns=columns)
+        figures = []
         pages = self.get_num_pages(driver)
         start = time.time()
-        pages = 2
         for page in range(1, pages):
             driver.get(f'{self.AMIAMI_PREOWNED_URI}&pagecnt={page}')
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
@@ -71,10 +65,10 @@ class Main():
                     # print(f'{name}')
                     # print(f'{brand}')
                     # print(f'{price}\n')
-                    
-                    df_figures.loc[-1] = [name, img, price, brand]
-                    df_figures.index = df_figures.index + 1
-                    df_figures = df_figures.sort_index()
+                    figures.append(Figure(name, img, price, brand))
+                    # df_figures.loc[-1] = [name, img, price, brand]
+                    # df_figures.index = df_figures.index + 1
+                    # df_figures = df_figures.sort_index()
             except:
                 print(page)
         # print(df_figures.to_markdown())
@@ -82,7 +76,7 @@ class Main():
         end = time.time()
         print(end - start)
         driver.close()
-        return df_figures
+        return figures
 
     def get_num_pages(self, driver):
         pages_cont = driver.find_elements_by_class_name('pager-list')
@@ -96,9 +90,9 @@ class Main():
         self.db_manager = DatabaseManager(figure.Figure)
         # df_db_figures = self.db_manager.get_all_df()
         # self.db_manager.create_tables()
-        self.db_manager.run_pruebas()
+        self.db_manager.run_pruebas_multiple()
         pass
 
 if __name__ == "__main__":
     got = Main()
-    got.test()
+    got.run()
