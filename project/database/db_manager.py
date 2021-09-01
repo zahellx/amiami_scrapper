@@ -44,6 +44,11 @@ class DatabaseManager():
                 Figure('Arroz', 'pollo', 'leches', 'aria' ), 
                 Figure('Arroz', 'pollo', 'leches', 'aria' ), 
                 Figure('Arroz', 'pollo', 'leches', 'aria' ), 
+                Figure('Arroz', 'pollo', 'leches', 'aria' ), 
+                Figure('Arroz', 'pollo', 'leches', 'aria' ), 
+                Figure('Arroz', 'pollo', 'leches', 'aria' ), 
+                Figure('Arroz', 'pollo', 'leches', 'aria' ), 
+                Figure('Arroz', 'pollo', 'leches', 'aria' ), 
             ]
         self.insert_multiple(data)
 
@@ -55,6 +60,17 @@ class DatabaseManager():
         self.session.add_all(data)
         self.session.flush()
         self.session.commit()
+        # splitedSize = 5
+        # a_splited = [data[x:x+splitedSize] for x in range(0, len(data), splitedSize)]
+        # for chunk in a_splited:
+        #     self.session.add_all(chunk)
+        #     self.session.flush()
+        #     self.session.commit()
+
+    # def insert_multiple(self, data):
+    #     for element in data:
+    #         self.session.add(element)
+    #     self.session.commit()
 
     def get_all(self):
         return self.session.query(self.model).all()
@@ -65,7 +81,8 @@ class DatabaseManager():
         return df
 
     def clean_table(self):
-        a = db.session.query(self.model).delete()
+        a = self.session.query(self.model).delete()
+        self.session.commit()
         print(a)
 
     def create_tables(self):

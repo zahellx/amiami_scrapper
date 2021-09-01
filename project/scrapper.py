@@ -11,25 +11,20 @@ from project.database.db_manager import DatabaseManager
 import time
 from project.database.models import figure
 import numpy as np
-import project.utils.utilidades as utilidades
 from project.database.models.figure import Figure
+import time
 
-class Main():
+class Scrapper():
     def run(self):
         self.db_manager = DatabaseManager(figure.Figure)
         preowned_figures = self.get_amiami_preowned()
         db_figures = self.db_manager.get_all()
-        print(db_figures)
-        # preowned = df_preowned.to_numpy()
-        # db_figures = df_db_figures.to_numpy()
-
 
         new_figures = list(set(preowned_figures) - set(db_figures))
         
         self.db_manager.clean_table()
-        print('inserting lines', len(preowned_figures))
-        print(preowned_figures)
-        self.db_manager.insert_multiple(new_figures)
+        self.db_manager.insert_multiple(preowned_figures)
+        return new_figures
 
 
     def get_amiami_preowned(self):
@@ -44,55 +39,57 @@ class Main():
         
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
 
-        columns = ['name', 'image', 'price', 'brand']
-        # df_figures = pd.DataFrame(columns=columns)
-        figures = []
         pages = self.get_num_pages(driver)
         start = time.time()
+        all_figures = []
+        # pages = 5
         for page in range(1, pages):
+            page_figures = self.get_pag_figures(driver, page)
+            all_figures.extend(page_figures)
+        end = time.time()
+        print(end - start)
+        driver.close()
+        return all_figures
+
+    def get_num_pages(self, driver):
+        try:
+            pages_cont = driver.find_elements_by_class_name('pager-list')
+            pages = pages_cont[0].find_elements_by_tag_name("li")
+            last_page = pages[len(pages) - 1].text
+            return int(last_page) + 1
+        except:
+            # print(f'Ha fallado la obtencion del numero de paginas')
+            time.sleep(5)
+            return self.get_num_pages(driver)
+
+    def get_pag_figures(self, driver, page):
+            figures = []
             driver.get(f'{self.AMIAMI_PREOWNED_URI}&pagecnt={page}')
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
             WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, 'newly-added-items__item')))
-            # body = driver.execute_script("return document.body")
             try: 
                 figures_cont = driver.find_elements_by_class_name('newly-added-items__item')
                 for figure in figures_cont:
                     img = figure.find_element_by_class_name('newly-added-items__item__image_item').find_element_by_tag_name("img").get_attribute("src")
                     name = figure.find_element_by_class_name('newly-added-items__item__name').text
                     brand = figure.find_element_by_class_name('newly-added-items__item__brand').text
-                    price = figure.find_element_by_class_name('newly-added-items__item__price').text.split(' ')[0]
-                    # print(f'{img}')
-                    # print(f'{name}')
-                    # print(f'{brand}')
-                    # print(f'{price}\n')
-                    figures.append(Figure(name, img, price, brand))
-                    # df_figures.loc[-1] = [name, img, price, brand]
-                    # df_figures.index = df_figures.index + 1
-                    # df_figures = df_figures.sort_index()
-            except:
-                print(page)
-        # print(df_figures.to_markdown())
-            
-        end = time.time()
-        print(end - start)
-        driver.close()
-        return figures
-
-    def get_num_pages(self, driver):
-        pages_cont = driver.find_elements_by_class_name('pager-list')
-        pages = pages_cont[0].find_elements_by_tag_name("li")
-        last_page = pages[len(pages) - 1].text
-        return int(last_page) + 1
-        # print(last_page)
-
+                    url = figure.find_element_by_class_name('newly-added-items__item__nomore').href
+                    try:
+                        price = figure.find_element_by_class_name('newly-added-items__item__price').text.split(' ')[0]
+                    except:
+                        price = 0
+                    figures.append(Figure(name, img, price, brand, url))
+                return figures
+            except Exception as error:
+                time.sleep(5)
+                return self.get_pag_figures(driver, page)
+                
 
     def test(self):
         self.db_manager = DatabaseManager(figure.Figure)
-        # df_db_figures = self.db_manager.get_all_df()
-        # self.db_manager.create_tables()
         self.db_manager.run_pruebas_multiple()
         pass
 
-if __name__ == "__main__":
-    got = Main()
-    got.run()
+# if __name__ == "__main__":
+#     got = Scrapper()
+#     got.run()
